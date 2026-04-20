@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Global City Population Trends 1950-2035</title>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+
+<script charset="utf-8" src="https://d3js.org/d3.v4.min.js"></script>
+<script charset="utf-8" src="https://cdnjs.cloudflare.com/ajax/libs/dimple/2.3.0/dimple.latest.min.js"></script>
+
+<style>    
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; }
+    #chartContainer { width: 840px; margin: auto; margin-top: 50px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    #chartContainer p { margin-left: 60px; margin-bottom: 5px; margin-top: 0; padding: 0; }
+    #charttitle { font: bold 24px Arial, sans-serif; color: #2d5a27; }
+    #chartsubhead { color: #666; font-size: 14px; margin-bottom: 20px; }
+    #CityMenu { padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-left: 60px; margin-top: 10px; cursor: pointer; }
+</style>
+</head>
+
+<body>
+
+<div id="chartContainer">
+    <p id="charttitle">Urban Growth Analysis (1950-2035)</p>
+    <p id="chartsubhead">Historical and projected population data provided by UN World Urbanization Prospects.</p>
+    <select id="CityMenu"><option value="">Select a City to View Trends</option></select>
+</div>
+
+<script>
+// Using your raw GitHub data URL
+var dataUrl = "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CityData_WUP2018_all.csv";
+
+d3.csv(dataUrl, function(data) {
+    var CityData = data;
+    
+    // Populate the dropdown menu
+    var menu = document.getElementById("CityMenu");
+    CityData.forEach(function(d, i) {
+        var option = document.createElement("option");
+        option.value = i;
+        option.text = d.CityName;
+        menu.appendChild(option);
+    });
+
+    var svg = dimple.newSvg("#chartContainer", 800, 450);
+
+    function SetCityData(index) {
+        svg.selectAll('*').remove(); // Clear previous chart
+        
+        var d = CityData[index];
+        var chartData = [
+            { "Status":"Historical","Year":"1950","Population": +d.pop1950 * 1000000 },
+            { "Status":"Historical","Year":"1960","Population": +d.pop1960 * 1000000 },
+            { "Status":"Historical","Year":"1970","Population": +d.pop1970 * 1000000 },
+            { "Status":"Historical","Year":"1980","Population": +d.pop1980 * 1000000 },
+            { "Status":"Historical","Year":"1990","Population": +d.pop1990 * 1000000 },
+            { "Status":"Historical","Year":"2000","Population": +d.pop2000 * 1000000 },
+            { "Status":"Historical","Year":"2010","Population": +d.pop2010 * 1000000 },
+            { "Status":"Current","Year":"2020","Population": +d.pop2020 * 1000000 },
+            { "Status":"Projected","Year":"2030","Population": +d.pop2030 * 1000000 },
+            { "Status":"Projected","Year":"2035","Population": +d.pop2035 * 1000000 }
+        ];
+
+        var myChart = new dimple.chart(svg, chartData);
+        myChart.setBounds(70, 30, 680, 310);
+        
+        // Redesigned Color Palette
+        myChart.assignColor("Historical", "#2d5a27");
+        myChart.assignColor("Current", "#e67e22");
+        myChart.assignColor("Projected", "#2d5a27", "#2d5a27", 0.5);
+
+        var x = myChart.addTimeAxis("x", "Year", "%Y", "%Y");
+        x.timeInterval = 10;
+        
+        var y = myChart.addMeasureAxis("y", "Population");
+        y.title = "Total Population";
+
+        var s = myChart.addSeries("Status", dimple.plot.line);
+        s.lineMarkers = true;
+        s.interpolation = "cardinal";
+
+        myChart.draw(800);
+        
+        // Style projected line as dashed
+        svg.selectAll("path.dimple-projected").style("stroke-dasharray", "4");
+    }
+
+    document.getElementById("CityMenu").onchange = function() {
+        if(this.value !== "") SetCityData(this.value);
+    };
+
+    // Initialize with first city
+    SetCityData(0);
+});
+</script>
+</body>
+</html>
