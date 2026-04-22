@@ -1,0 +1,4 @@
+{
+  "type" : "FeatureCollection",
+  "features" : [{"type":"Feature","id":1,"geometry":null,"properties":{"OBJECTID":1,"ENT":6,"NAME":"COLORADO SPRINGS","SHAPE_STAr":5589573761.8100004,"SHAPE_STLe":1147632.99376,"Shape__Area":857939185.039536,"Shape__Length":449740.94418874319}}]
+}
