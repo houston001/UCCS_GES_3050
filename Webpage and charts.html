@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>USAFA Data Debugger</title>
+    <style>
+        html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.31/"></script>
+</head>
+<body>
+    <div id="viewDiv"></div>
+
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/SceneView",
+            "esri/layers/FeatureLayer"
+        ], function(Map, SceneView, FeatureLayer) {
+
+            const map = new Map({
+                basemap: "gray-vector",
+                ground: "world-elevation"
+            });
+
+            const view = new SceneView({
+                container: "viewDiv",
+                map: map,
+                camera: {
+                    position: { x: -104.88, y: 38.99, z: 2000 },
+                    tilt: 60
+                }
+            });
+
+            // Using FeatureLayer as a catch-all
+            const dataLayer = new FeatureLayer({
+                url: "https://services1.arcgis.com/82YxYqy3f0s2D9c4/arcgis/rest/services/CS_BLDG_Data_Center/FeatureServer"
+            });
+            map.add(dataLayer);
+
+            // THE TRUTH TEST: Check if data actually exists
+            dataLayer.queryFeatureCount().then(function(count) {
+                console.log("---------------------------------------");
+                console.log("TOTAL FEATURES FOUND: " + count);
+                console.log("---------------------------------------");
+                if (count === 0) {
+                    alert("The layer loaded, but it contains 0 features. Check your data in AGOL!");
+                }
+            }).catch(function(error) {
+                console.error("Debug Error:", error);
+            });
+
+            // Simple renderer: show as flat polygons, no extrusion yet
+            dataLayer.renderer = {
+                type: "simple",
+                symbol: {
+                    type: "simple-fill",
+                    color: [255, 0, 0, 0.8], // Bright red
+                    outline: { color: [255, 255, 255], width: 1 }
+                }
+            };
+        });
+    </script>
+</body>
+</html>
