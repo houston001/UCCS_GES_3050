@@ -6,21 +6,14 @@
     <style>
         html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; }
         
-        /* Navigation (Left) */
-        #locationContainer {
-            position: absolute; top: 20px; left: 20px; z-index: 10;
+        #locationContainer, #powerContainer {
+            position: absolute; top: 20px; z-index: 10;
             display: flex; flex-direction: column; gap: 8px;
             background: rgba(25, 25, 25, 0.9); padding: 15px; border-radius: 6px;
             color: #fff; font-family: sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-
-        /* Power Controls (Right) */
-        #powerContainer {
-            position: absolute; top: 20px; right: 20px; z-index: 10;
-            display: flex; flex-direction: column; gap: 8px;
-            background: rgba(25, 25, 25, 0.9); padding: 15px; border-radius: 6px;
-            color: #fff; font-family: sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
+        #locationContainer { left: 20px; }
+        #powerContainer { right: 20px; }
 
         button {
             padding: 10px 15px; cursor: pointer; border: 1px solid #444;
@@ -61,24 +54,35 @@
             "esri/layers/GeoJSONLayer"
         ], function(Map, SceneView, GeoJSONLayer) {
 
-            // This URL points directly to your raw data in the UCCS_GES_3050 repo
             const url = "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip_FeaturesToJSON.geojson";
 
             function createRenderer(columnName) {
                 return {
-                    type: "simple",
-                    symbol: {
+                    type: "unique-value", // Changed from "simple"
+                    field: "Category",    // Looking at the Category column
+                    defaultSymbol: {
                         type: "polygon-3d",
                         symbolLayers: [{
                             type: "extrude",
-                            material: { color: [0, 120, 212, 0.8] }, // Semi-transparent blue
-                            edges: { type: "solid", color: [255, 255, 255, 0.4], size: 0.5 }
+                            material: { color: [0, 120, 212, 0.7] }, // Default Blue
+                            edges: { type: "solid", color: [255, 255, 255, 0.3], size: 0.5 }
                         }]
                     },
+                    uniqueValueInfos: [{
+                        value: "data_center", // If Category is "data_center"
+                        symbol: {
+                            type: "polygon-3d",
+                            symbolLayers: [{
+                                type: "extrude",
+                                material: { color: [220, 20, 60, 0.9] }, // Bright Red
+                                edges: { type: "solid", color: [255, 255, 255, 0.6], size: 1 }
+                            }]
+                        }
+                    }],
                     visualVariables: [{
                         type: "size",
                         field: columnName,
-                        valueUnit: "meters" // Buildings height in literal meters
+                        valueUnit: "meters"
                     }]
                 };
             }
@@ -104,7 +108,6 @@
                 }
             });
 
-            // Adjust these coordinates to center on your specific islands
             const locations = {
                 center1: { center: [-104.8214, 38.8339], zoom: 17, tilt: 70 },
                 center2: { center: [-104.8500, 38.8100], zoom: 17, tilt: 70 }
@@ -129,8 +132,6 @@
 
             layer.when(() => {
                 view.goTo(layer.fullExtent);
-            }).catch(err => {
-                console.error("The map couldn't load the GeoJSON. Double check the filename!", err);
             });
         });
     </script>
