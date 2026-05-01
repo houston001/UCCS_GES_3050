@@ -10,12 +10,19 @@
         #map-container { position: relative; }
         iframe { width: 100%; height: 100%; border: none; }
         #sidebar { padding: 25px; background: #111; border-left: 1px solid #333; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        
+        .nav-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+        .loc-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 12px; border-radius: 6px; cursor: pointer; text-align: left; transition: 0.2s; }
+        .loc-btn:hover { border-color: #0078d4; background: #222; }
+        .loc-btn strong { color: #0078d4; display: block; margin-bottom: 2px; }
+
         .time-controls { display: flex; gap: 8px; }
         .toggle-btn { background: #222; border: 1px solid #444; color: #888; padding: 8px; cursor: pointer; border-radius: 4px; font-size: 11px; flex: 1; }
         .toggle-btn.active { background: #0078d4; color: white; border-color: #0078d4; }
+        
         .chart-card { background: #181818; padding: 15px; border-radius: 8px; border: 1px solid #222; }
-        .chart-label { font-size: 10px; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        canvas { height: 180px !important; }
+        .chart-label { font-size: 10px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+        canvas { height: 160px !important; }
     </style>
 </head>
 <body>
@@ -27,19 +34,23 @@
 <div id="sidebar">
     <h2 style="color:#0078d4; margin:0; font-weight: 300;">Colorado Energy Analytics</h2>
     
-    <div class="time-controls">
-        <button onclick="updateUsage('Daily', this)" class="toggle-btn">Daily</button>
-        <button onclick="updateUsage('Weekly', this)" class="toggle-btn">Weekly</button>
-        <button onclick="updateUsage('Yearly', this)" class="toggle-btn active">Yearly</button>
+    <div class="nav-group">
+        <button class="loc-btn" onclick="zoomTo('novva')"><strong>Novva Data Center</strong>View 2023 Infrastructure</button>
+        <button class="loc-btn" onclick="zoomTo('qts')"><strong>QTS Data Center</strong>View 2014 Infrastructure</button>
     </div>
 
-    <!-- 35-Year Price Chart from Excel -->
+    <div class="time-controls">
+        <button onclick="updateUsage('Daily', 40, this)" class="toggle-btn">Daily</button>
+        <button onclick="updateUsage('Weekly', 80, this)" class="toggle-btn">Weekly</button>
+        <button onclick="updateUsage('Monthly', 150, this)" class="toggle-btn">Monthly</button>
+        <button onclick="updateUsage('Yearly', 300, this)" class="toggle-btn active">Yearly</button>
+    </div>
+
     <div class="chart-card">
-        <div class="chart-label">Price Index (¢/kWh) - 1990-2024</div>
+        <div class="chart-label">Price Index (¢/kWh)</div>
         <canvas id="priceChart"></canvas>
     </div>
 
-    <!-- 35-Year Revenue Chart from Excel -->
     <div class="chart-card">
         <div class="chart-label">Industry Revenue ($k)</div>
         <canvas id="revChart"></canvas>
@@ -47,17 +58,15 @@
 </div>
 
 <script>
-    // Data extracted from Elec_Rates.xlsx
-    const years = ['1990', '1991', '1992', '1993', '1994', '1995', '1996', '1997', '1998', '1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
-    const prices = [7.02, 7.07, 7.2, 7.24, 7.36, 7.42, 7.49, 7.42, 7.45, 7.38, 7.31, 7.47, 7.37, 8.14, 8.42, 9.06, 9.02, 9.25, 10.13, 10.0, 11.04, 11.27, 11.46, 11.93, 12.18, 12.12, 12.07, 12.17, 12.15, 12.18, 12.36, 13.07, 14.19, 14.3, 14.92];
-    const revenue = [687083, 713847, 735775, 771494, 804646, 838964, 889175, 909554, 942446, 968893, 1024815, 1080208, 1137237, 1280454, 1307036, 1489539, 1529025, 1631722, 1794446, 1740497, 1997858, 2059155, 2087889, 2210316, 2203838, 2227990, 2273979, 2264556, 2342778, 2362565, 2531337, 2696118, 2922469, 2859285, 3086849];
+    const years = ['1990', '1995', '2000', '2005', '2010', '2014', '2023', '2024'];
+    const prices = [7.02, 7.42, 7.31, 9.06, 11.04, 12.18, 14.3, 14.92]; //
+    const revenue = [687083, 838964, 1024815, 1489539, 1997858, 2203838, 2859285, 3086849]; //
 
-    // Initialize Price Chart
     const priceChart = new Chart(document.getElementById('priceChart'), {
         type: 'line',
         data: {
             labels: years,
-            datasets: [{ data: prices, borderColor: '#0078d4', backgroundColor: 'rgba(0,120,212,0.1)', fill: true, tension: 0.2 }]
+            datasets: [{ data: prices, borderColor: '#0078d4', backgroundColor: 'rgba(0,120,212,0.1)', fill: true }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
@@ -69,22 +78,27 @@
                         novva: { type: 'line', xMin: '2023', xMax: '2023', borderColor: '#dc143c', borderWidth: 2, label: { content: 'Novva', display: true, backgroundColor: '#dc143c' }}
                     }
                 }
-            },
-            scales: { x: { ticks: { color: '#666', maxTicksLimit: 10 }}, y: { ticks: { color: '#666' }}}
+            }
         }
     });
 
-    // Initialize Revenue Chart
     const revChart = new Chart(document.getElementById('revChart'), {
         type: 'bar',
         data: { labels: years, datasets: [{ data: revenue, backgroundColor: '#dc143c' }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#666', maxTicksLimit: 10 }}, y: { ticks: { color: '#666' }}}}
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }}
     });
 
-    function updateUsage(scale, btn) {
+    function zoomTo(loc) {
+        const frame = document.getElementById('mapFrame').contentWindow;
+        frame.postMessage({ type: 'ZOOM', target: loc }, '*');
+    }
+
+    function updateUsage(label, height, btn) {
         document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        // Logic to update the secondary usage chart would go here
+        
+        const frame = document.getElementById('mapFrame').contentWindow;
+        frame.postMessage({ type: 'SET_HEIGHT', height: height }, '*');
     }
 </script>
 </body>
