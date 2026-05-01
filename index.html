@@ -6,20 +6,30 @@
     <style>
         html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; }
         
-        #locationContainer, #powerContainer {
-            position: absolute; top: 20px; z-index: 10;
+        /* Power Controls (Top Center) */
+        #powerContainer {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            z-index: 10; display: flex; flex-direction: row; gap: 10px;
+            background: rgba(25, 25, 25, 0.9); padding: 12px 20px; border-radius: 30px;
+            color: #fff; font-family: sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #444;
+        }
+
+        /* Location Controls (Left) */
+        #locationContainer {
+            position: absolute; top: 80px; left: 20px; z-index: 10;
             display: flex; flex-direction: column; gap: 8px;
             background: rgba(25, 25, 25, 0.9); padding: 15px; border-radius: 6px;
             color: #fff; font-family: sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        #locationContainer { left: 20px; }
-        #powerContainer { right: 20px; }
 
         button {
-            padding: 10px 15px; cursor: pointer; border: 1px solid #444;
-            border-radius: 3px; background: #333; color: #ddd;
-            text-align: left; transition: 0.2s all;
+            padding: 8px 15px; cursor: pointer; border: 1px solid #444;
+            border-radius: 20px; background: #333; color: #ddd;
+            transition: 0.2s all; font-size: 13px;
         }
+        #locationContainer button { border-radius: 4px; text-align: left; }
+        
         button:hover { background: #444; color: #fff; }
         .active { background: #0078d4; color: #fff; border-color: #0086ed; }
         .loc-btn { background: #222; border-color: #555; }
@@ -28,19 +38,21 @@
     <script src="https://js.arcgis.com/4.31/"></script>
 </head>
 <body>
-    <div id="locationContainer">
-        <div style="margin-bottom: 10px; font-size: 12px; font-weight: bold; color: #0078d4;">JUMP TO CENTER</div>
-        <button class="loc-btn" onclick="zoomToCenter('center1')">Data Center North</button>
-        <button class="loc-btn" onclick="zoomToCenter('center2')">Data Center South</button>
-        <button class="loc-btn" onclick="zoomToCenter('full')">Show All</button>
+    <div id="powerContainer">
+        <button id="daily" class="active">Daily Usage</button>
+        <button id="weekly">Weekly Usage</button>
+        <button id="monthly">Monthly Usage</button>
+        <button id="yearly">Yearly Usage</button>
     </div>
 
-    <div id="powerContainer">
-        <div style="margin-bottom: 10px; font-size: 12px; font-weight: bold; color: #0078d4;">POWER USAGE</div>
-        <button id="daily" class="active">Daily (m)</button>
-        <button id="weekly">Weekly (m)</button>
-        <button id="monthly">Monthly (m)</button>
-        <button id="yearly">Yearly (m)</button>
+    <div id="locationContainer">
+        <div style="margin-bottom: 10px; font-size: 11px; font-weight: bold; color: #0078d4; text-transform: uppercase;">Data Centers</div>
+        <button class="loc-btn" onclick="zoomToCenter('novva')">Novva COS</button>
+        <button class="loc-btn" onclick="zoomToCenter('qts')">QTS COS</button>
+        <button class="loc-btn" onclick="zoomToCenter('t5')">T5@Colorado</button>
+        <button class="loc-btn" onclick="zoomToCenter('taurus')">Project Taurus</button>
+        <hr style="width:100%; border:0; border-top:1px solid #444; margin:5px 0;">
+        <button class="loc-btn" onclick="zoomToCenter('full')">Reset View</button>
     </div>
 
     <div id="viewDiv"></div>
@@ -58,24 +70,24 @@
 
             function createRenderer(columnName) {
                 return {
-                    type: "unique-value", // Changed from "simple"
-                    field: "Category",    // Looking at the Category column
+                    type: "unique-value", 
+                    field: "Category",    
                     defaultSymbol: {
                         type: "polygon-3d",
                         symbolLayers: [{
                             type: "extrude",
-                            material: { color: [0, 120, 212, 0.7] }, // Default Blue
-                            edges: { type: "solid", color: [255, 255, 255, 0.3], size: 0.5 }
+                            material: { color: [0, 120, 212, 0.6] },
+                            edges: { type: "solid", color: [255, 255, 255, 0.2], size: 0.5 }
                         }]
                     },
                     uniqueValueInfos: [{
-                        value: "Data Center", // If Category is "Data Center"
+                        value: "Data Center", 
                         symbol: {
                             type: "polygon-3d",
                             symbolLayers: [{
                                 type: "extrude",
-                                material: { color: [220, 20, 60, 0.9] }, // Bright Red
-                                edges: { type: "solid", color: [255, 255, 255, 0.6], size: 1 }
+                                material: { color: [255, 0, 0, 0.9] }, 
+                                edges: { type: "solid", color: [255, 255, 255, 0.8], size: 1.5 }
                             }]
                         }
                     }],
@@ -103,14 +115,17 @@
                 container: "viewDiv",
                 map: map,
                 camera: {
-                    position: [-104.8214, 38.8000, 4500],
-                    tilt: 50
+                    position: [-104.81435, 38.9000, 8000],
+                    tilt: 45
                 }
             });
 
+            // Specific Coordinates Provided
             const locations = {
-                center1: { center: [-104.8214, 38.8339], zoom: 17, tilt: 70 },
-                center2: { center: [-104.8500, 38.8100], zoom: 17, tilt: 70 }
+                novva: { center: [-104.81435, 39.01406], zoom: 16, tilt: 70 },
+                qts: { center: [-104.8477, 38.91806], zoom: 16, tilt: 70 },
+                t5: { center: [-104.8025, 38.7962], zoom: 16, tilt: 70 },
+                taurus: { center: [-104.8577, 38.89405], zoom: 16, tilt: 70 }
             };
 
             window.zoomToCenter = function(key) {
