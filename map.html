@@ -7,36 +7,44 @@
     <style>
         html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; background: #0b0b0b; overflow: hidden; }
         
-        /* Overlay UI for buttons inside the map frame */
+        /* Dashboard Overlay */
         #mapControls {
-            position: absolute; top: 15px; left: 15px; z-index: 100;
-            display: flex; flex-direction: column; gap: 10px;
-            background: rgba(15, 15, 15, 0.9); padding: 15px; border-radius: 8px;
-            border: 1px solid #333; width: 220px;
+            position: absolute; top: 20px; left: 20px; z-index: 100;
+            display: flex; flex-direction: column; gap: 12px;
+            background: rgba(10, 10, 10, 0.85); padding: 20px; border-radius: 10px;
+            border: 1px solid #0078d4; width: 240px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
         }
-        .map-btn {
-            background: #222; border: 1px solid #444; color: #eee; padding: 10px;
-            cursor: pointer; border-radius: 4px; font-size: 12px; text-align: left;
-        }
-        .map-btn:hover { border-color: #0078d4; background: #2a2a2a; }
-        .map-btn strong { color: #0078d4; display: block; }
+        
+        .control-label { font-size: 10px; color: #0078d4; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold; margin-bottom: 4px; }
 
-        .time-row { display: flex; gap: 5px; margin-top: 5px; }
-        .t-btn {
-            background: #333; border: none; color: #aaa; padding: 6px;
-            cursor: pointer; border-radius: 4px; font-size: 10px; flex: 1;
+        .map-btn {
+            background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 12px;
+            cursor: pointer; border-radius: 6px; font-size: 13px; text-align: left;
+            transition: all 0.2s ease;
         }
-        .t-btn.active { background: #0078d4; color: white; }
+        .map-btn:hover { border-color: #0078d4; background: #222; transform: translateX(5px); }
+        .map-btn strong { color: #0078d4; display: block; font-size: 14px; }
+
+        .time-row { display: flex; gap: 4px; margin-top: 5px; }
+        .t-btn {
+            background: #252525; border: 1px solid #444; color: #888; padding: 8px 4px;
+            cursor: pointer; border-radius: 4px; font-size: 10px; flex: 1;
+            transition: 0.2s;
+        }
+        .t-btn.active { background: #0078d4; color: white; border-color: #0078d4; font-weight: bold; }
     </style>
 </head>
 <body>
     <div id="viewDiv"></div>
 
     <div id="mapControls">
-        <button class="map-btn" onclick="zoomTo('novva')"><strong>Novva</strong>Go to North Site</button>
-        <button class="map-btn" onclick="zoomTo('qts')"><strong>QTS</strong>Go to Central Site</button>
+        <div class="control-label">Site Navigation</div>
+        <button class="map-btn" onclick="zoomTo('novva')"><strong>Novva Site</strong>North Colorado Springs</button>
+        <button class="map-btn" onclick="zoomTo('qts')"><strong>QTS Site</strong>Central Infrastructure</button>
         
-        <div style="font-size: 10px; color: #666; margin-top: 5px; text-transform: uppercase;">Usage Scale</div>
+        <div class="control-label" style="margin-top:10px;">Power Load (MW Scaling)</div>
         <div class="time-row">
             <button class="t-btn" onclick="setDCHeight(40, this)">Daily</button>
             <button class="t-btn" onclick="setDCHeight(100, this)">Weekly</button>
@@ -48,8 +56,8 @@
     <script>
         require(["esri/Map", "esri/views/SceneView", "esri/layers/GeoJSONLayer"], (Map, SceneView, GeoJSONLayer) => {
             
-            // Function to generate the renderer with dynamic height
-            function getCustomRenderer(h) {
+            // This function handles the 3D extrusion based on your MW calculations
+            function getMWRenderer(heightValue) {
                 return {
                     type: "unique-value",
                     field: "Category", 
@@ -57,8 +65,8 @@
                         type: "polygon-3d",
                         symbolLayers: [{
                             type: "extrude",
-                            material: { color: [150, 150, 150, 0.2] },
-                            size: 12 // Keeps city buildings at a base level
+                            material: { color: [100, 100, 100, 0.25] },
+                            size: 15 // Base city building height
                         }]
                     },
                     uniqueValueInfos: [{
@@ -67,8 +75,8 @@
                             type: "polygon-3d",
                             symbolLayers: [{
                                 type: "extrude",
-                                material: { color: "#dc143c" }, // Bright red
-                                size: h // Updated by buttons
+                                material: { color: "#dc143c" }, // Vibrant Red for DC
+                                size: heightValue // Linked to the button height (MW)
                             }]
                         }
                     }]
@@ -77,34 +85,32 @@
 
             const bldgLayer = new GeoJSONLayer({
                 url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip2_FeaturesToJSON.geojson",
-                // 'absolute-height' or 'relative-to-ground' helps handle your Z-export
-                elevationInfo: { mode: "relative-to-ground" },
-                renderer: getCustomRenderer(450)
+                elevationInfo: { mode: "relative-to-ground" }, // Respects your Z-height export
+                renderer: getMWRenderer(450), // Default to Yearly height
+                outFields: ["*"]
             });
 
             const view = new SceneView({
                 container: "viewDiv",
                 map: new Map({ basemap: "dark-gray-vector", layers: [bldgLayer] }),
-                camera: { position: [-104.821, 38.833, 12000], tilt: 45 }
+                camera: { position: [-104.821, 38.833, 10000], tilt: 45 },
+                environment: {
+                    lighting: { type: "virtual", directShadowsEnabled: true },
+                    atmosphere: { quality: "high" }
+                }
             });
 
-            // Locations
             const locs = {
-                novva: [-104.814, 39.014],
-                qts: [-104.877, 38.891]
+                novva: { target: [-104.814, 39.014], zoom: 16, tilt: 55 },
+                qts: { target: [-104.877, 38.891], zoom: 16, tilt: 55 }
             };
 
-            // Button actions
-            window.zoomTo = (key) => {
-                view.goTo({ target: locs[key], zoom: 16, tilt: 50 });
-            };
+            window.zoomTo = (site) => { view.goTo(locs[site]); };
 
-            window.setDCHeight = (h, btn) => {
+            window.setDCHeight = (mwHeight, btn) => {
                 document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                
-                // Force a fresh renderer update
-                bldgLayer.renderer = getCustomRenderer(h);
+                bldgLayer.renderer = getMWRenderer(mwHeight);
             };
         });
     </script>
