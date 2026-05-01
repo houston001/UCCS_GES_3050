@@ -7,22 +7,13 @@
     <style>
         html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; background: #0b0b0b; overflow: hidden; }
         
-        /* Dashboard Overlay - Moved to the Right */
         #mapControls {
-            position: absolute; 
-            top: 20px; 
-            right: 20px; /* Changed from left to right */
-            z-index: 100;
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px;
-            background: rgba(10, 10, 10, 0.9); 
-            padding: 18px; 
-            border-radius: 10px;
-            border: 1px solid #0078d4; 
-            width: 260px;
-            backdrop-filter: blur(8px);
-            box-shadow: -5px 5px 15px rgba(0,0,0,0.5);
+            position: absolute; top: 20px; right: 20px; z-index: 100;
+            display: flex; flex-direction: column; gap: 10px;
+            background: rgba(10, 10, 10, 0.92); padding: 18px; border-radius: 10px;
+            border: 1px solid #0078d4; width: 260px;
+            backdrop-filter: blur(10px);
+            box-shadow: -5px 5px 20px rgba(0,0,0,0.6);
         }
         
         .control-label { font-size: 10px; color: #0078d4; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold; margin-bottom: 2px; }
@@ -76,8 +67,8 @@
                         type: "polygon-3d",
                         symbolLayers: [{
                             type: "extrude",
-                            material: { color: [100, 100, 100, 0.2] },
-                            size: 15
+                            material: { color: [180, 180, 180, 0.6] }, // Increased opacity for visibility
+                            size: 20 // Standard buildings now have a constant scale
                         }]
                     },
                     uniqueValueInfos: [{
@@ -97,13 +88,17 @@
             const bldgLayer = new GeoJSONLayer({
                 url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip2_FeaturesToJSON.geojson",
                 elevationInfo: { mode: "relative-to-ground" },
-                renderer: getMWRenderer(450)
+                renderer: getMWRenderer(450),
+                outFields: ["*"]
             });
 
             const view = new SceneView({
                 container: "viewDiv",
                 map: new Map({ basemap: "dark-gray-vector", layers: [bldgLayer] }),
-                camera: { position: [-104.821, 38.833, 15000], tilt: 40 }
+                camera: { position: [-104.821, 38.833, 15000], tilt: 40 },
+                environment: {
+                    lighting: { type: "virtual", directShadowsEnabled: true }
+                }
             });
 
             const locs = {
