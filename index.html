@@ -1,149 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Colorado Springs Infrastructure Analysis</title>
+    <title>Infrastructure Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
-    <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/dark/main.css">
-    <script src="https://js.arcgis.com/4.31/"></script>
-    
     <style>
-        html, body { padding: 0; margin: 0; height: 100%; width: 100%; background: #111; color: #ddd; font-family: sans-serif; overflow: hidden; }
-        .wrapper { display: grid; grid-template-columns: 1fr 380px; height: 100vh; width: 100vw; }
-        #viewDiv { height: 100%; width: 100%; position: relative; background: #151515; }
-        
-        #toggleContainer {
-            position: absolute; bottom: 30px; right: 20px; z-index: 100;
-            background: rgba(20,20,20,0.9); padding: 12px; border-radius: 8px;
-            border: 1px solid #0078d4; box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        }
-
-        #powerControls { 
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
-            z-index: 10; display: flex; gap: 8px; background: rgba(20,20,20,0.9); 
-            padding: 8px 15px; border-radius: 30px; border: 1px solid #444;
-        }
-
-        #sidebar { background: #111; border-left: 1px solid #333; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .toggle-btn { background: #333; border: none; color: #aaa; padding: 6px 14px; cursor: pointer; border-radius: 20px; font-size: 11px; font-weight: 600; }
-        .toggle-btn.active { background: #0078d4; color: white; }
-        
-        .loc-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 14px; border-radius: 8px; cursor: pointer; text-align: left; width: 100%; }
-        .loc-btn:hover { border-color: #0078d4; background: #222; }
-
-        .chart-card { background: #181818; padding: 15px; border-radius: 10px; border: 1px solid #222; }
-        .chart-label { font-size: 10px; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: bold; }
+        body { margin: 0; display: grid; grid-template-columns: 1fr 350px; height: 100vh; background: #111; color: #eee; font-family: sans-serif; }
+        #map-container { position: relative; border-right: 1px solid #333; }
+        iframe { width: 100%; height: 100%; border: none; }
+        #sidebar { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .chart-card { background: #181818; padding: 15px; border-radius: 8px; border: 1px solid #222; }
         canvas { height: 150px !important; }
-
-        /* Switch Styling */
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; vertical-align: middle; margin-right: 8px;}
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #0078d4; }
-        input:checked + .slider:before { transform: translateX(20px); }
     </style>
 </head>
 <body>
-
-<div class="wrapper">
-    <div id="viewDiv">
-        <div id="powerControls">
-            <button class="toggle-btn active">Daily</button>
-            <button class="toggle-btn">Weekly</button>
-            <button class="toggle-btn">Monthly</button>
-            <button class="toggle-btn">Yearly</button>
-        </div>
-
-        <div id="toggleContainer">
-            <label class="switch">
-                <input type="checkbox" id="contextToggle">
-                <span class="slider"></span>
-            </label>
-            <span style="font-size: 12px; font-weight: bold; color: #eee;">Show City Buildings</span>
-        </div>
+    <div id="map-container">
+        <!-- This calls your second file -->
+        <iframe src="map.html" id="mapFrame"></iframe>
     </div>
 
     <div id="sidebar">
-        <h2 style="color:#0078d4; margin:0 0 5px 0; font-size: 1.4em;">Infrastructure Analysis</h2>
-        
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button class="loc-btn" onclick="zoomTo('novva')"><strong>Novva Colorado Springs</strong><br><small>2023 Infrastructure</small></button>
-            <button class="loc-btn" onclick="zoomTo('qts')"><strong>QTS Colorado Springs</strong><br><small>2014 Infrastructure</small></button>
-            <button class="loc-btn" onclick="zoomTo('t5')"><strong>T5 @ Colorado</strong><br><small>2014 Infrastructure</small></button>
-        </div>
-
+        <h2>Analytics</h2>
         <div class="chart-card">
-            <div class="chart-label">Price Index (¢/kWh)</div>
             <canvas id="priceChart"></canvas>
         </div>
-
         <div class="chart-card">
-            <div class="chart-label">Growth (Revenue)</div>
             <canvas id="revChart"></canvas>
         </div>
+        <button onclick="zoomMap('novva')">Zoom to Novva</button>
     </div>
-</div>
 
-<script>
-    const data = [{"Year":1990,"Price":7.02,"Rev":687.08},{"Year":1995,"Price":7.42,"Rev":838.96},{"Year":2000,"Price":7.31,"Rev":1024.81},{"Year":2005,"Price":9.06,"Rev":1489.53},{"Year":2010,"Price":11.04,"Rev":1997.85},{"Year":2014,"Price":12.18,"Rev":2203.83},{"Year":2023,"Price":14.3,"Rev":2859.28},{"Year":2024,"Price":14.92,"Rev":3086.84}];
-    const labels = data.map(d => d.Year.toString());
-
-    // Milestone markers for the charts
-    const annotations = {
-        qts: { type: 'line', xMin: '2014', xMax: '2014', borderColor: '#ffa500', borderWidth: 2, label: { content: '2014 QTS', display: true, position: 'start', font: {size: 10} } },
-        novva: { type: 'line', xMin: '2023', xMax: '2023', borderColor: '#00ffcc', borderWidth: 2, label: { content: '2023 Novva', display: true, position: 'end', font: {size: 10} } }
-    };
-
-    const chartConfig = (yData, color, type='line') => ({
-        type: type,
-        data: { labels: labels, datasets: [{ data: yData, borderColor: color, backgroundColor: color + '44', fill: true, tension: 0.3 }] },
-        options: { 
-            responsive: true, maintainAspectRatio: false, 
-            plugins: { legend: { display: false }, annotation: { annotations: annotations } },
-            scales: { x: { ticks: { color: '#666', font: { size: 9 } } }, y: { ticks: { color: '#666', font: { size: 9 } } } }
+    <script>
+        // Standard Chart.js setup here...
+        // To talk to the map, we use postMessage
+        function zoomMap(location) {
+            const frame = document.getElementById('mapFrame').contentWindow;
+            frame.postMessage({ type: 'ZOOM', target: location }, '*');
         }
-    });
-
-    new Chart(document.getElementById('priceChart'), chartConfig(data.map(d=>d.Price), '#0078d4'));
-    new Chart(document.getElementById('revChart'), chartConfig(data.map(d=>d.Rev), '#dc143c', 'bar'));
-
-    require(["esri/Map", "esri/views/SceneView", "esri/layers/GeoJSONLayer"], function(Map, SceneView, GeoJSONLayer) {
-        
-        const layer = new GeoJSONLayer({ 
-            url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip2_FeaturesToJSON.geojson",
-            // Start with ONLY Data Centers to ensure fast initial load
-            definitionExpression: "Category = 'Data Center'", 
-            renderer: { 
-                type: "unique-value", 
-                field: "Category", 
-                defaultSymbol: { 
-                    type: "polygon-3d", 
-                    symbolLayers: [{ type: "extrude", material: { color: [50, 50, 50, 0.4] }, size: 10 }] 
-                },
-                uniqueValueInfos: [{ 
-                    value: "Data Center", 
-                    symbol: { type: "polygon-3d", symbolLayers: [{ type: "extrude", material: { color: [220, 20, 60, 1.0] }, size: 40 }] } 
-                }]
-            } 
-        });
-
-        const view = new SceneView({ 
-            container: "viewDiv", 
-            map: new Map({ basemap: "dark-gray-vector", layers: [layer] }), 
-            camera: { position: [-104.821, 38.833, 12000], tilt: 35 },
-            qualityProfile: "low"
-        });
-        
-        // Toggle Logic for Other Buildings
-        document.getElementById("contextToggle").addEventListener("change", (e) => {
-            layer.definitionExpression = e.target.checked ? "1=1" : "Category = 'Data Center'";
-        });
-
-        const pts = { novva: [-104.814, 39.014], qts: [-104.877, 38.891], t5: [-104.802, 38.796] };
-        window.zoomTo = (k) => view.goTo({ target: pts[k], zoom: 16, tilt: 50 });
-    });
-</script>
+    </script>
 </body>
 </html>
