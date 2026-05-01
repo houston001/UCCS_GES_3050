@@ -13,6 +13,13 @@
         .wrapper { display: grid; grid-template-columns: 1fr 380px; height: 100vh; width: 100vw; }
         #viewDiv { height: 100%; width: 100%; position: relative; background: #151515; }
         
+        /* Loading Indicator */
+        #loader {
+            position: absolute; bottom: 20px; left: 20px; z-index: 100;
+            background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 5px;
+            border: 1px solid #444; font-size: 12px; display: block;
+        }
+
         #powerControls { 
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
             z-index: 10; display: flex; gap: 8px; background: rgba(20,20,20,0.95); 
@@ -23,18 +30,19 @@
         .toggle-btn { background: #333; border: none; color: #aaa; padding: 6px 14px; cursor: pointer; border-radius: 20px; font-size: 11px; font-weight: 600; }
         .toggle-btn.active { background: #0078d4; color: white; }
         
-        .loc-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 14px; border-radius: 8px; cursor: pointer; text-align: left; width: 100%; transition: background 0.2s; }
+        .loc-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 14px; border-radius: 8px; cursor: pointer; text-align: left; width: 100%; margin-bottom: 5px;}
         .loc-btn:hover { border-color: #0078d4; background: #252525; }
 
         .chart-card { background: #181818; padding: 15px; border-radius: 10px; border: 1px solid #222; }
         .chart-label { font-size: 10px; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: bold; }
-        canvas { height: 160px !important; }
+        canvas { height: 150px !important; }
     </style>
 </head>
 <body>
 
 <div class="wrapper">
     <div id="viewDiv">
+        <div id="loader">Map Status: Initializing Assets...</div>
         <div id="powerControls">
             <button id="daily" class="toggle-btn active">Daily</button>
             <button id="weekly" class="toggle-btn">Weekly</button>
@@ -44,79 +52,88 @@
     </div>
 
     <div id="sidebar">
-        <h2 style="color:#0078d4; margin:0 0 5px 0; font-size: 1.4em;">Infrastructure Map</h2>
+        <h2 style="color:#0078d4; margin:0 0 5px 0; font-size: 1.4em;">GIS Infrastructure</h2>
+        <p style="font-size: 11px; color: #666; margin-top: 0;">Spatial Analysis of Colorado Springs Data Centers</p>
         
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <button class="loc-btn" onclick="zoomTo('novva')"><strong>Novva Colorado Springs</strong><br><small>Built 2023</small></button>
-            <button class="loc-btn" onclick="zoomTo('qts')"><strong>QTS Colorado Springs</strong><br><small>Operational 2014</small></button>
-            <button class="loc-btn" onclick="zoomTo('taurus')"><strong>Project Taurus</strong><br><small>Planning Phase</small></button>
-            <button class="loc-btn" onclick="zoomTo('t5')"><strong>T5 @ Colorado</strong><br><small>Operational 2014</small></button>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+            <button class="loc-btn" onclick="zoomTo('novva')"><strong>Novva Colorado Springs</strong><br><small>2023 Development</small></button>
+            <button class="loc-btn" onclick="zoomTo('qts')"><strong>QTS Colorado Springs</strong><br><small>Established 2014</small></button>
+            <button class="loc-btn" onclick="zoomTo('taurus')"><strong>Project Taurus</strong><br><small>Proposed Infrastructure</small></button>
+            <button class="loc-btn" onclick="zoomTo('t5')"><strong>T5 @ Colorado</strong><br><small>Established 2014</small></button>
         </div>
 
         <div class="chart-card">
-            <div class="chart-label">Price Trend (¢/kWh)</div>
+            <div class="chart-label">Energy Price Index (¢/kWh)</div>
             <canvas id="priceChart"></canvas>
         </div>
 
         <div class="chart-card">
-            <div class="chart-label">Revenue Growth</div>
+            <div class="chart-label">State-Wide Revenue</div>
             <canvas id="revChart"></canvas>
         </div>
     </div>
 </div>
 
 <script>
-    // Economic Data for Charts
-    const data = [{"Year":1990,"Price":7.02,"Rev":687083,"Sales":9787280},{"Year":1995,"Price":7.42,"Rev":838964,"Sales":11306705},{"Year":2000,"Price":7.31,"Rev":1024815,"Sales":14028934},{"Year":2005,"Price":9.06,"Rev":1489539,"Sales":16436381},{"Year":2010,"Price":11.04,"Rev":1997858,"Sales":18102386},{"Year":2014,"Price":12.18,"Rev":2203838,"Sales":18092932},{"Year":2023,"Price":14.3,"Rev":2859285,"Sales":19999333},{"Year":2024,"Price":14.92,"Rev":3086849,"Sales":20693690}];
-    const years = data.map(d => d.Year.toString());
+    // Chart Logic
+    const stats = [{"Year":1990,"Price":7.02,"Rev":687.083},{"Year":1995,"Price":7.42,"Rev":838.964},{"Year":2000,"Price":7.31,"Rev":1024.815},{"Year":2005,"Price":9.06,"Rev":1489.539},{"Year":2010,"Price":11.04,"Rev":1997.858},{"Year":2014,"Price":12.18,"Rev":2203.838},{"Year":2023,"Price":14.3,"Rev":2859.285},{"Year":2024,"Price":14.92,"Rev":3086.849}];
+    const yrs = stats.map(s => s.Year.toString());
 
-    const milestoneAnnos = {
-        y14: { type: 'line', xMin: '2014', xMax: '2014', borderColor: '#ffa500', borderDash: [4,4], label: { content: '2014: QTS/T5', display: true, position: 'start', backgroundColor: 'rgba(255,165,0,0.8)', font: { size: 9 } } },
-        y23: { type: 'line', xMin: '2023', xMax: '2023', borderColor: '#00ffcc', borderDash: [4,4], label: { content: '2023: Novva', display: true, position: 'end', backgroundColor: 'rgba(0,255,204,0.8)', font: { size: 9 } } }
+    const commonOpts = { 
+        responsive: true, maintainAspectRatio: false, 
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#555', font: { size: 9 } } }, y: { ticks: { color: '#555', font: { size: 9 } } } }
     };
 
-    const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, annotation: { annotations: milestoneAnnos } }, scales: { x: { ticks: { color: '#444', font: { size: 9 } } }, y: { ticks: { color: '#444', font: { size: 9 } } } } };
+    new Chart(document.getElementById('priceChart'), { type: 'line', data: { labels: yrs, datasets: [{ data: stats.map(s=>s.Price), borderColor: '#0078d4', tension: 0.3 }] }, options: commonOpts });
+    new Chart(document.getElementById('revChart'), { type: 'bar', data: { labels: yrs, datasets: [{ data: stats.map(s=>s.Rev), backgroundColor: 'rgba(220, 20, 60, 0.6)' }] }, options: commonOpts });
 
-    new Chart(document.getElementById('priceChart'), { type: 'line', data: { labels: years, datasets: [{ data: data.map(d=>d.Price), borderColor: '#0078d4', tension: 0.3, pointRadius: 2 }] }, options: commonOptions });
-    new Chart(document.getElementById('revChart'), { type: 'bar', data: { labels: years, datasets: [{ data: data.map(d=>d.Rev/1000), backgroundColor: 'rgba(220, 20, 60, 0.7)' }] }, options: commonOptions });
-
-    require(["esri/Map", "esri/views/SceneView", "esri/layers/GeoJSONLayer"], function(Map, SceneView, GeoJSONLayer) {
+    require(["esri/Map", "esri/views/SceneView", "esri/layers/GeoJSONLayer", "esri/core/reactiveUtils"], function(Map, SceneView, GeoJSONLayer, reactiveUtils) {
         
-        const layer = new GeoJSONLayer({ 
-            // Corrected file name
-            url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/Data_Centers_C_FeaturesToJSO.geojson",
-            // This ensures context buildings remain visible without overloading the browser
+        const loader = document.getElementById("loader");
+
+        const bldgLayer = new GeoJSONLayer({ 
+            // Updated Filename
+            url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip2_FeaturesToJSON.geojson",
+            outFields: ["*"],
             renderer: { 
                 type: "unique-value", 
                 field: "Category", 
                 defaultSymbol: { 
                     type: "polygon-3d", 
-                    symbolLayers: [{ type: "extrude", material: { color: [45, 45, 45, 0.4] }, size: 8 }] 
+                    symbolLayers: [{ type: "extrude", material: { color: [60, 60, 60, 0.3] }, size: 12 }] 
                 },
                 uniqueValueInfos: [{ 
                     value: "Data Center", 
-                    symbol: { type: "polygon-3d", symbolLayers: [{ type: "extrude", material: { color: [220, 20, 60, 0.95] }, size: 45 }] } 
+                    symbol: { type: "polygon-3d", symbolLayers: [{ type: "extrude", material: { color: [220, 20, 60, 1.0] }, size: 50 }] } 
                 }]
             } 
         });
 
         const view = new SceneView({ 
             container: "viewDiv", 
-            map: new Map({ basemap: "dark-gray-vector", layers: [layer] }), 
-            camera: { position: [-104.821, 38.833, 10000], tilt: 35 },
+            map: new Map({ basemap: "dark-gray-vector", layers: [bldgLayer] }), 
+            camera: { position: [-104.821, 38.833, 15000], tilt: 30 },
             qualityProfile: "low",
+            // Optimization: ignore small features that aren't important at distance
             environment: { starsEnabled: false, atmosphere: { quality: "low" } }
         });
         
-        const points = { 
+        // Monitoring load status
+        reactiveUtils.watch(() => view.updating, (updating) => {
+            loader.innerHTML = updating ? "Map Status: Processing Spatial Data..." : "Map Status: Ready";
+            if(!updating) setTimeout(() => loader.style.display = "none", 3000);
+        });
+
+        const targets = { 
             novva: [-104.814, 39.014], 
             qts: [-104.877, 38.891], 
             taurus: [-104.878, 38.892], 
             t5: [-104.802, 38.796] 
         };
 
-        window.zoomTo = (k) => {
-            view.goTo({ target: points[k], zoom: 16, tilt: 55 }, { speedFactor: 1.5 });
+        window.zoomTo = (key) => {
+            view.goTo({ target: targets[key], zoom: 16, tilt: 60 }, { duration: 1500 });
         };
     });
 </script>
