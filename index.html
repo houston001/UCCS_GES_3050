@@ -15,12 +15,13 @@
             border: 1px solid #444;
         }
 
-        /* Location Controls (Right) */
+        /* Location Controls (Moved to Right) */
         #locationContainer {
-            position: absolute; top: 80px; left: 20px; z-index: 10;
+            position: absolute; top: 80px; right: 20px; z-index: 10;
             display: flex; flex-direction: column; gap: 8px;
             background: rgba(25, 25, 25, 0.9); padding: 15px; border-radius: 6px;
             color: #fff; font-family: sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 160px;
         }
 
         button {
@@ -28,7 +29,12 @@
             border-radius: 20px; background: #333; color: #ddd;
             transition: 0.2s all; font-size: 13px;
         }
-        #locationContainer button { border-radius: 4px; text-align: right; }
+        
+        #locationContainer button { 
+            border-radius: 4px; 
+            text-align: center; 
+            width: 100%;
+        }
         
         button:hover { background: #444; color: #fff; }
         .active { background: #0078d4; color: #fff; border-color: #0086ed; }
@@ -38,6 +44,7 @@
     <script src="https://js.arcgis.com/4.31/"></script>
 </head>
 <body>
+    <!-- Top Menu: Usage -->
     <div id="powerContainer">
         <button id="daily" class="active">Daily Usage</button>
         <button id="weekly">Weekly Usage</button>
@@ -45,8 +52,9 @@
         <button id="yearly">Yearly Usage</button>
     </div>
 
+    <!-- Right Menu: Locations -->
     <div id="locationContainer">
-        <div style="margin-bottom: 10px; font-size: 11px; font-weight: bold; color: #0078d4; text-transform: uppercase;">Data Centers</div>
+        <div style="margin-bottom: 10px; font-size: 11px; font-weight: bold; color: #0078d4; text-transform: uppercase; text-align: center;">Jump to Center</div>
         <button class="loc-btn" onclick="zoomToCenter('novva')">Novva COS</button>
         <button class="loc-btn" onclick="zoomToCenter('qts')">QTS COS</button>
         <button class="loc-btn" onclick="zoomToCenter('t5')">T5@Colorado</button>
@@ -120,7 +128,6 @@
                 }
             });
 
-            // Specific Coordinates Provided
             const locations = {
                 novva: { center: [-104.81435, 39.01406], zoom: 16, tilt: 70 },
                 qts: { center: [-104.8477, 38.91806], zoom: 16, tilt: 70 },
