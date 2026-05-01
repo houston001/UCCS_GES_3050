@@ -1,27 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/dark/main.css">
     <script src="https://js.arcgis.com/4.31/"></script>
-    <style>html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; background: #0b0b0b; }</style>
+    <style>
+        html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; background: #0b0b0b; overflow: hidden; }
+        
+        /* Overlay UI for buttons inside the map frame */
+        #mapControls {
+            position: absolute; top: 15px; left: 15px; z-index: 100;
+            display: flex; flex-direction: column; gap: 10px;
+            background: rgba(15, 15, 15, 0.9); padding: 15px; border-radius: 8px;
+            border: 1px solid #333; width: 220px;
+        }
+        .map-btn {
+            background: #222; border: 1px solid #444; color: #eee; padding: 10px;
+            cursor: pointer; border-radius: 4px; font-size: 12px; text-align: left;
+        }
+        .map-btn:hover { border-color: #0078d4; background: #2a2a2a; }
+        .map-btn strong { color: #0078d4; display: block; }
+
+        .time-row { display: flex; gap: 5px; margin-top: 5px; }
+        .t-btn {
+            background: #333; border: none; color: #aaa; padding: 6px;
+            cursor: pointer; border-radius: 4px; font-size: 10px; flex: 1;
+        }
+        .t-btn.active { background: #0078d4; color: white; }
+    </style>
 </head>
 <body>
     <div id="viewDiv"></div>
+
+    <div id="mapControls">
+        <button class="map-btn" onclick="zoomTo('novva')"><strong>Novva</strong>Go to North Site</button>
+        <button class="map-btn" onclick="zoomTo('qts')"><strong>QTS</strong>Go to Central Site</button>
+        
+        <div style="font-size: 10px; color: #666; margin-top: 5px; text-transform: uppercase;">Usage Scale</div>
+        <div class="time-row">
+            <button class="t-btn" onclick="setDCHeight(40, this)">Daily</button>
+            <button class="t-btn" onclick="setDCHeight(100, this)">Weekly</button>
+            <button class="t-btn" onclick="setDCHeight(200, this)">Monthly</button>
+            <button class="t-btn active" onclick="setDCHeight(450, this)">Yearly</button>
+        </div>
+    </div>
+
     <script>
         require(["esri/Map", "esri/views/SceneView", "esri/layers/GeoJSONLayer"], (Map, SceneView, GeoJSONLayer) => {
             
-            const bldgLayer = new GeoJSONLayer({
-                url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip2_FeaturesToJSON.geojson",
-                outFields: ["*"],
-                renderer: {
+            // Function to generate the renderer with dynamic height
+            function getCustomRenderer(h) {
+                return {
                     type: "unique-value",
                     field: "Category", 
                     defaultSymbol: {
                         type: "polygon-3d",
                         symbolLayers: [{
                             type: "extrude",
-                            material: { color: [150, 150, 150, 0.2] }, // Translucent gray for all city buildings
-                            size: 12
+                            material: { color: [150, 150, 150, 0.2] },
+                            size: 12 // Keeps city buildings at a base level
                         }]
                     },
                     uniqueValueInfos: [{
@@ -30,19 +67,45 @@
                             type: "polygon-3d",
                             symbolLayers: [{
                                 type: "extrude",
-                                material: { color: "#dc143c" }, // Bright red for Data Centers
-                                size: 45
+                                material: { color: "#dc143c" }, // Bright red
+                                size: h // Updated by buttons
                             }]
                         }
                     }]
-                }
+                };
+            }
+
+            const bldgLayer = new GeoJSONLayer({
+                url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip2_FeaturesToJSON.geojson",
+                // 'absolute-height' or 'relative-to-ground' helps handle your Z-export
+                elevationInfo: { mode: "relative-to-ground" },
+                renderer: getCustomRenderer(450)
             });
 
             const view = new SceneView({
                 container: "viewDiv",
                 map: new Map({ basemap: "dark-gray-vector", layers: [bldgLayer] }),
-                camera: { position: [-104.821, 38.833, 12000], tilt: 40 }
+                camera: { position: [-104.821, 38.833, 12000], tilt: 45 }
             });
+
+            // Locations
+            const locs = {
+                novva: [-104.814, 39.014],
+                qts: [-104.877, 38.891]
+            };
+
+            // Button actions
+            window.zoomTo = (key) => {
+                view.goTo({ target: locs[key], zoom: 16, tilt: 50 });
+            };
+
+            window.setDCHeight = (h, btn) => {
+                document.querySelectorAll('.t-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Force a fresh renderer update
+                bldgLayer.renderer = getCustomRenderer(h);
+            };
         });
     </script>
 </body>
