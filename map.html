@@ -1,0 +1,33 @@
+<!-- map.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.31/esri/themes/dark/main.css">
+    <script src="https://js.arcgis.com/4.31/"></script>
+    <style>html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; }</style>
+</head>
+<body>
+    <div id="viewDiv"></div>
+    <script>
+        require(["esri/Map", "esri/views/SceneView", "esri/layers/GeoJSONLayer"], (Map, SceneView, GeoJSONLayer) => {
+            const layer = new GeoJSONLayer({
+                url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip2_FeaturesToJSON.geojson",
+                definitionExpression: "Category = 'Data Center'"
+            });
+
+            const view = new SceneView({
+                container: "viewDiv",
+                map: new Map({ basemap: "dark-gray-vector", layers: [layer] }),
+                camera: { position: [-104.821, 38.833, 15000], tilt: 35 }
+            });
+
+            // Listen for zoom commands from the parent index.html
+            window.addEventListener("message", (event) => {
+                if (event.data.type === 'ZOOM') {
+                    // Zoom logic here...
+                }
+            });
+        });
+    </script>
+</body>
+</html>
