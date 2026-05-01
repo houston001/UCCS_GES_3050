@@ -9,20 +9,15 @@
         body { margin: 0; display: grid; grid-template-columns: 1fr 400px; height: 100vh; background: #0b0b0b; color: #eee; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         #map-container { position: relative; }
         iframe { width: 100%; height: 100%; border: none; }
-        #sidebar { padding: 25px; background: #111; border-left: 1px solid #333; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-        
-        .nav-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-        .loc-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 12px; border-radius: 6px; cursor: pointer; text-align: left; transition: 0.2s; }
-        .loc-btn:hover { border-color: #0078d4; background: #222; }
-        .loc-btn strong { color: #0078d4; display: block; margin-bottom: 2px; }
-
-        .time-controls { display: flex; gap: 8px; }
-        .toggle-btn { background: #222; border: 1px solid #444; color: #888; padding: 8px; cursor: pointer; border-radius: 4px; font-size: 11px; flex: 1; }
-        .toggle-btn.active { background: #0078d4; color: white; border-color: #0078d4; }
-        
-        .chart-card { background: #181818; padding: 15px; border-radius: 8px; border: 1px solid #222; }
-        .chart-label { font-size: 10px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
-        canvas { height: 160px !important; }
+        #sidebar { padding: 30px; background: #111; border-left: 1px solid #333; overflow-y: auto; display: flex; flex-direction: column; gap: 25px; }
+        .project-header { border-bottom: 1px solid #0078d4; padding-bottom: 15px; }
+        .project-header h1 { color: #0078d4; margin: 0; font-weight: 300; font-size: 24px; }
+        .project-header p { font-size: 11px; color: #666; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .analysis-text { font-size: 14px; line-height: 1.6; color: #aaa; }
+        .chart-card { background: #181818; padding: 20px; border-radius: 8px; border: 1px solid #222; }
+        .chart-label { font-size: 11px; color: #0078d4; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+        canvas { height: 180px !important; }
+        .insight-tag { font-size: 12px; color: #888; background: #222; padding: 10px; border-left: 3px solid #dc143c; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -32,37 +27,40 @@
 </div>
 
 <div id="sidebar">
-    <h2 style="color:#0078d4; margin:0; font-weight: 300;">Colorado Energy Analytics</h2>
-    
-    <div class="nav-group">
-        <button class="loc-btn" onclick="zoomTo('novva')"><strong>Novva Data Center</strong>View 2023 Infrastructure</button>
-        <button class="loc-btn" onclick="zoomTo('qts')"><strong>QTS Data Center</strong>View 2014 Infrastructure</button>
+    <div class="project-header">
+        <h1>Energy Logistics</h1>
+        <p>Colorado Springs Spatial Analysis</p>
     </div>
 
-    <div class="time-controls">
-        <button onclick="updateUsage('Daily', 40, this)" class="toggle-btn">Daily</button>
-        <button onclick="updateUsage('Weekly', 80, this)" class="toggle-btn">Weekly</button>
-        <button onclick="updateUsage('Monthly', 150, this)" class="toggle-btn">Monthly</button>
-        <button onclick="updateUsage('Yearly', 300, this)" class="toggle-btn active">Yearly</button>
+    <div class="analysis-text">
+        This dashboard evaluates the infrastructure growth and som etext to explain the energy demand of <strong>four major data center sites</strong> across Colorado Springs. With industrial rates reaching <strong>14.92¢/kWh</strong>, spatial efficiency is paramount.
     </div>
 
     <div class="chart-card">
-        <div class="chart-label">Price Index (¢/kWh)</div>
+        <div class="chart-label">Rate Progression (1990-2024)</div>
         <canvas id="priceChart"></canvas>
+        <div class="insight-tag">
+            The sharp upward trend since 2020 correlates with the rapid expansion of high-density computing infrastructure.
+        </div>
     </div>
 
     <div class="chart-card">
-        <div class="chart-label">Industry Revenue ($k)</div>
+        <div class="chart-label">State-Wide Utility Revenue</div>
         <canvas id="revChart"></canvas>
+    </div>
+
+    <div class="analysis-text" style="font-size: 13px;">
+        <strong>Strategic Nodes:</strong> From <strong>Novva</strong> in the north to <strong>T5</strong> in the south, these facilities represent the primary load centers for the regional utility grid.
     </div>
 </div>
 
 <script>
-    const years = ['1990', '1995', '2000', '2005', '2010', '2014', '2023', '2024'];
-    const prices = [7.02, 7.42, 7.31, 9.06, 11.04, 12.18, 14.3, 14.92]; //
-    const revenue = [687083, 838964, 1024815, 1489539, 1997858, 2203838, 2859285, 3086849]; //
+    // Data from Elec_Rates.xlsx
+    const years = ['1990', '1995', '2000', '2005', '2010', '2015', '2020', '2024'];
+    const prices = [7.02, 7.42, 7.31, 9.06, 11.04, 12.12, 12.36, 14.92];
+    const revenue = [687083, 838964, 1024815, 1489539, 1997858, 2227990, 2531337, 3086849];
 
-    const priceChart = new Chart(document.getElementById('priceChart'), {
+    new Chart(document.getElementById('priceChart'), {
         type: 'line',
         data: {
             labels: years,
@@ -70,36 +68,29 @@
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                annotation: {
-                    annotations: {
-                        qts: { type: 'line', xMin: '2014', xMax: '2014', borderColor: '#dc143c', borderWidth: 2, label: { content: 'QTS', display: true, backgroundColor: '#dc143c' }},
-                        novva: { type: 'line', xMin: '2023', xMax: '2023', borderColor: '#dc143c', borderWidth: 2, label: { content: 'Novva', display: true, backgroundColor: '#dc143c' }}
-                    }
-                }
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#666' } },
+                y: { grid: { color: '#222' }, ticks: { color: '#666' } }
             }
         }
     });
 
-    const revChart = new Chart(document.getElementById('revChart'), {
+    new Chart(document.getElementById('revChart'), {
         type: 'bar',
-        data: { labels: years, datasets: [{ data: revenue, backgroundColor: '#dc143c' }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }}
+        data: { 
+            labels: years, 
+            datasets: [{ data: revenue, backgroundColor: '#333', hoverBackgroundColor: '#0078d4' }] 
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#666' } },
+                y: { grid: { color: '#222' }, ticks: { color: '#666' } }
+            }
+        }
     });
-
-    function zoomTo(loc) {
-        const frame = document.getElementById('mapFrame').contentWindow;
-        frame.postMessage({ type: 'ZOOM', target: loc }, '*');
-    }
-
-    function updateUsage(label, height, btn) {
-        document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        const frame = document.getElementById('mapFrame').contentWindow;
-        frame.postMessage({ type: 'SET_HEIGHT', height: height }, '*');
-    }
 </script>
 </body>
 </html>
