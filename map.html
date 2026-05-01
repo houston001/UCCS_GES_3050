@@ -47,12 +47,12 @@
             <button class="nav-btn" onclick="zoomTo('raeden')"><strong>Raeden</strong>West</button>
         </div>
         
-        <div class="control-label">Energy Load (MW)</div>
+        <div class="control-label">Energy Load (Global Scale)</div>
         <div class="time-row">
             <button class="t-btn" onclick="setDCHeight(40, this)">Daily</button>
             <button class="t-btn" onclick="setDCHeight(100, this)">Weekly</button>
             <button class="t-btn" onclick="setDCHeight(200, this)">Monthly</button>
-            <button class="t-btn active" onclick="setDCHeight(450, this)">Yearly</button>
+            <button class="t-btn active" onclick="setDCHeight(600, this)">Yearly</button>
         </div>
     </div>
 
@@ -60,6 +60,9 @@
         require(["esri/Map", "esri/views/SceneView", "esri/layers/GeoJSONLayer"], (Map, SceneView, GeoJSONLayer) => {
             
             function getMWRenderer(h) {
+                // Calculate a base scale for the city so it grows with the DCs
+                const cityScale = h * 0.1; 
+
                 return {
                     type: "unique-value",
                     field: "Category", 
@@ -67,8 +70,8 @@
                         type: "polygon-3d",
                         symbolLayers: [{
                             type: "extrude",
-                            material: { color: [180, 180, 180, 0.6] }, // Increased opacity for visibility
-                            size: 20 // Standard buildings now have a constant scale
+                            material: { color: [180, 180, 180, 0.4] },
+                            size: cityScale // City buildings grow too
                         }]
                     },
                     uniqueValueInfos: [{
@@ -78,7 +81,7 @@
                             symbolLayers: [{
                                 type: "extrude",
                                 material: { color: "#dc143c" },
-                                size: h
+                                size: h * 2.5 // Data centers get an extra boost to stay dominant
                             }]
                         }
                     }]
@@ -88,17 +91,14 @@
             const bldgLayer = new GeoJSONLayer({
                 url: "https://raw.githubusercontent.com/houston001/UCCS_GES_3050/main/CS_BLDG_Clip2_FeaturesToJSON.geojson",
                 elevationInfo: { mode: "relative-to-ground" },
-                renderer: getMWRenderer(450),
+                renderer: getMWRenderer(600),
                 outFields: ["*"]
             });
 
             const view = new SceneView({
                 container: "viewDiv",
                 map: new Map({ basemap: "dark-gray-vector", layers: [bldgLayer] }),
-                camera: { position: [-104.821, 38.833, 15000], tilt: 40 },
-                environment: {
-                    lighting: { type: "virtual", directShadowsEnabled: true }
-                }
+                camera: { position: [-104.821, 38.833, 15000], tilt: 40 }
             });
 
             const locs = {
